@@ -933,3 +933,105 @@ a:focus-visible, .f-lane:focus-visible, .worker:focus-visible {
 
 .day-row { transition: background 0.2s ease; }
 .day-row:hover { background: var(--panel); }
+
+/* ---------- corrections, habits, open questions ---------- */
+
+.zone-count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.b-notes {
+  margin-top: 10px;
+  font-size: 13.5px;
+  color: var(--faint);
+  line-height: 1.55;
+  max-width: 640px;
+}
+
+.correction {
+  padding: 18px 0 16px;
+  border-bottom: 1px solid var(--line-soft);
+  max-width: 760px;
+}
+
+.c-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.c-count {
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--red);
+  min-width: 34px;
+}
+
+.c-theme {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.c-dates {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+.c-embodied {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--dim);
+  line-height: 1.55;
+}
+
+ol.habits {
+  margin: 0;
+  padding: 0 0 0 2px;
+  list-style: none;
+  counter-reset: habit;
+  max-width: 760px;
+  columns: 2;
+  column-gap: 44px;
+}
+
+ol.habits li {
+  counter-increment: habit;
+  font-size: 13.5px;
+  color: var(--dim);
+  line-height: 1.5;
+  padding: 9px 0 9px 34px;
+  position: relative;
+  border-bottom: 1px solid var(--line-soft);
+  break-inside: avoid;
+}
+
+ol.habits li::before {
+  content: counter(habit, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 11px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--faint);
+}
+
+.ledger-stamp {
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  ol.habits { columns: 1; }
+   }
