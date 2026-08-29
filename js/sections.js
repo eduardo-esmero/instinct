@@ -310,24 +310,21 @@ window.Sections = (function () {
         '<div class="hero-quote"><div class="q">&ldquo;You act on reality based on my instinct.&rdquo;</div>' +
         '<div class="q-src">Eduardo, August 27, 2026 - the mission line, recorded in why-we-are-doing-this.md</div></div>' +
         '<div class="ledger-note">Below the line is doubt machinery, not a profile. Beliefs about him are kept in three zones - ' +
-        'settled (with his verbatim evidence and the date last attacked), working (thin, single-source, provisional on purpose), ' +
-        'and open (standing questions). The metrics grade the machine, never him: how often he has to repeat a correction, ' +
-        'which beliefs were revised or killed, and how much of the map is his words against inference. ' +
-        'The ledger feed is being written by the why seat; until it lands, the two source documents below are the map as it stands. ' +
+        'settled (repeatedly tested, uncontradicted, his verbatim evidence attached), working (strongly stated, thin test count, ' +
+        'provisional on purpose), and open (standing questions, not beliefs). The metrics grade the machine, never him: ' +
+        'how often he has to repeat a correction, which beliefs were revised or killed, and how much of the map is his words ' +
+        'against inference. The ledger is rendered live from the why seat\'s feed; the two documents under it are the longform map. ' +
         'They are maps. He corrects maps.</div>' +
-        '<div class="machine-metrics"><div class="block-label">Machine-grading metrics</div>' +
-        'Repeated-lecture counter per correction theme, revision history of beliefs changed or killed, provenance ratio of his words to inference. ' +
-        'They arrive with the ledger feed. Nothing here is measured against him.</div>' +
         '<div id="ledger-root">' +
         '<div class="zone"><div class="zone-head"><span class="zone-name">Settled</span>' +
         '<span class="zone-desc">held beliefs, his verbatim evidence attached, date last attacked</span></div>' +
-        '<div class="empty-zone">The ledger feed is being written by the why seat. Settled beliefs land here when it arrives.</div></div>' +
+        '<div class="empty-zone">Reading the settled zone&hellip;</div></div>' +
         '<div class="zone"><div class="zone-head"><span class="zone-name">Working</span>' +
         '<span class="zone-desc">thin, single-source, provisional on purpose</span></div>' +
-        '<div class="empty-zone">The ledger feed is being written by the why seat. Working beliefs land here when it arrives.</div></div>' +
+        '<div class="empty-zone">Reading the working zone&hellip;</div></div>' +
         '<div class="zone"><div class="zone-head"><span class="zone-name">Open</span>' +
         '<span class="zone-desc">standing questions and unresolved tensions</span></div>' +
-        '<div class="empty-zone">The ledger feed is being written by the why seat. Open questions land here when it arrives.</div></div></div>',
+        '<div class="empty-zone">Reading the open questions&hellip;</div></div></div>',
       docs: [
         { key: 'why', title: 'Why we are doing this' },
         { key: 'how-he-thinks', title: 'How he thinks' },
@@ -339,11 +336,21 @@ window.Sections = (function () {
       },
     });
     /* the lede stays empty by design: the hero quote carries it */
-    /* the belief ledger: lights up when the why seat's feed is allowlisted */
-    ctx.getJSON('/api/doc?key=beliefs').then(function (feed) {
-      var root = document.getElementById('ledger-root');
-      if (root && window.Ledger) window.Ledger.render(root, feed);
-    }).catch(function () { /* feed not live yet; the honest empty zones stand */ });
+    /* the belief ledger, rendered live from the why seat's feed.
+       one retry rides out the edge challenge a first visit can race. */
+    var ledgerTries = 0;
+    function loadLedger() {
+      ledgerTries++;
+      ctx.getJSON('/api/doc?key=beliefs').then(function (feed) {
+        var root = document.getElementById('ledger-root');
+        if (root && window.Ledger) window.Ledger.render(root, feed);
+      }).catch(function () {
+        var root = document.getElementById('ledger-root');
+        if (ledgerTries < 2) { setTimeout(loadLedger, 2500); return; }
+        if (root) root.innerHTML = '<div class="empty-zone">The ledger feed is unreachable right now. The two documents below are the map as it stands.</div>';
+      });
+    }
+    loadLedger();
   }
 
   function renderLearning(el, ctx, docKey) {
