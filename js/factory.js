@@ -96,11 +96,15 @@ window.FactorySection = (function () {
     });
 
     var msLeft = wp.date - now;
-    var countdown, paceSub;
+    var countdown, paceNeeded = 0, paceSub;
     if (msLeft > 0) {
       var dl = msLeft / (24 * 3600 * 1000);
       countdown = Math.floor(dl) + 'd ' + Math.floor((dl % 1) * 24) + 'h';
-      paceSub = money(Math.max(wp.amount - earned, 0) / dl).replace('.00', '') + '/day from here to close the gap';
+      /* whole days left, the scoreboard convention: on Aug 29 the count is 6,
+         so $500 over 6 days = $83.33/day needed from here */
+      var daysLeft = Math.max(1, Math.floor(msLeft / (24 * 3600 * 1000)));
+      paceNeeded = Math.max(wp.amount - earned, 0) / daysLeft;
+      paceSub = money(paceNeeded) + '/day needed from here - ' + daysLeft + ' days left (the 7-day plan asked ' + money(d.pace_per_day || 0).replace('.00', '') + '/day)';
     } else {
       countdown = 'due';
       paceSub = 'the waypoint has arrived';
@@ -120,7 +124,7 @@ window.FactorySection = (function () {
     html += '<div class="scoreboard">' +
       '<div class="score"><div class="score-num' + (earned > 0 ? ' has-gold' : '') + '">' + money(earned) + '</div><div class="score-label">EARNED</div><div class="score-sub">gold is only gold when a stranger pays</div></div>' +
       '<div class="score"><div class="score-num dim-num">' + money(d.in_motion || 0) + '</div><div class="score-label">IN MOTION</div><div class="score-sub">committed, not yet paid</div></div>' +
-      '<div class="score"><div class="score-num dim-num">' + money(d.pace_per_day || 0).replace('.00', '') + '/day</div><div class="score-label">PACE REQUIRED</div><div class="score-sub">' + paceSub + '</div></div>' +
+      '<div class="score"><div class="score-num dim-num">' + money(paceNeeded || (d.pace_per_day || 0)) + '/day</div><div class="score-label">PACE REQUIRED</div><div class="score-sub">' + paceSub + '</div></div>' +
       '<div class="score"><div class="score-num dim-num">' + countdown + '</div><div class="score-label">WAYPOINT CLOCK</div><div class="score-sub">to the first waypoint</div></div>' +
       '</div>';
 
