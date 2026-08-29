@@ -134,27 +134,20 @@ window.Sections = (function () {
 
   function renderWorkers(el, ctx) {
     ctx.getFactory().then(function (d) {
-      var groups = { live: [], review: [], queued: [], parked: [], dead: [] };
-      (d.lanes || []).forEach(function (l) { groups[window.FactorySection.laneStatus(l)].push(l); });
-      Object.keys(groups).forEach(function (k) {
-        groups[k].sort(function (a, b) { return (a.seat || 99) - (b.seat || 99); });
-      });
-
-      var labels = {
-        live: 'Working', review: 'In review', queued: 'Seated, waiting on a gate',
-        parked: 'Parked', dead: 'Killed'
-      };
+      var F = window.FactorySection;
+      var groups = F.groupLanes(d.lanes);
 
       var html = '<div class="now-hero"><div class="now-kicker">The Workers</div>' +
         '<div class="now-line">One agent per lane. ' + (d.lanes || []).length + ' seats. ' +
-        'What each is, what it is doing, and what gates it.</div>' +
-        '<div class="stamp-line">Same record as the Factory page, read as people, not money.</div></div>';
+        'Tier one is closest to money: what is live and hunting. Tier two waits on one named gate. Tier three is parked or killed, reason attached.</div>' +
+        '<div class="stamp-line">Priority is earned, not assigned - the order follows what is actually in play. Same record as the Factory page, read as people.</div></div>';
 
-      ['live', 'review', 'queued', 'parked', 'dead'].forEach(function (g) {
-        if (!groups[g].length) return;
-        html += '<div class="worker-group-label">' + labels[g] + ' \u00b7 ' + groups[g].length + '</div>';
-        groups[g].forEach(function (l) {
-          var st = window.FactorySection.laneStatus(l);
+      F.GROUP_DEFS.forEach(function (g) {
+        var lanes = groups[g.key];
+        if (!lanes.length) return;
+        html += '<div class="worker-group-label">' + g.label + ' \u00b7 ' + lanes.length + '</div>';
+        lanes.forEach(function (l) {
+          var st = F.laneStatus(l);
           var detail = '';
           if (l.understanding) detail += dRow('what it is', l.understanding);
           if (l.next_gate || l.next) detail += dRow('gate', l.next_gate || l.next);
@@ -166,10 +159,10 @@ window.Sections = (function () {
             (l.reputation.pending || []).forEach(function (p) { rep.push('\u00b7 ' + p); });
             detail += dRow('reputation', rep.join('  \u00b7  '));
           }
-          html += '<div class="worker' + (st === 'dead' ? ' is-dead' : '') + '">' +
+          html += '<div class="worker' + (st === 'dead' ? ' is-dead' : '') + (st === 'parked' ? ' is-parked' : '') + '">' +
             '<span class="seat">' + (l.seat != null ? String(l.seat).padStart(2, '0') : '\u2013') + '</span>' +
-            '<span class="dot ' + st + '"></span>' +
-            '<span class="wname">' + esc(l.name) + '</span>' +
+            '<span class="dot ' + (st === 'blocked' ? 'review' : st) + '"></span>' +
+            '<span class="wname">' + esc(l.name) + F.tierTag(l) + '</span>' +
             '<span class="wstate">' + esc(l.state || '') + '</span>' +
             (detail ? '<div class="worker-detail">' + detail + '</div>' : '') +
             '</div>';
