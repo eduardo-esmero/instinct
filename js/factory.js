@@ -36,8 +36,70 @@ window.FactorySection = (function () {
     var s = (l.status || '').toLowerCase();
     var state = (l.state || '').toLowerCase();
     if (s === 'dead' || s === 'killed' || state.indexOf('killed') === 0 || state.indexOf('dead.') === 0) return 'dead';
-    if (s === 'live' || s === 'review' || s === 'queued' || s === 'parked') return s;
+    if (s.indexOf('parked') === 0) return 'parked';
+    if (s === 'active') return 'live';
+    if (s === 'blocked') return 'blocked';
+    if (s === 'live' || s === 'review' || s === 'queued') return s;
     return 'queued';
+  }
+
+  /* His frame (Aug 29): tiers read as closeness to money.
+     Tier one = live and hunting, tier two = one gate away,
+     tier three = parked or killed. The desk's own T1/T2/T3 judgment
+     stays on each row as a tag. */
+  var GROUP_DEFS = [
+    { key: 'hunting', label: 'Tier one \u00b7 live and hunting', note: 'ordered by what is actually in play - priority is earned, not assigned' },
+    { key: 'gate',    label: 'Tier two \u00b7 one gate away',    note: 'each row names the single gate' },
+    { key: 'parked',  label: 'Tier three \u00b7 parked or killed', note: 'held or ended, with the reason attached' }
+  ];
+
+  function tierRank(l) {
+    var t = l.tier;
+    if (t === 'T1') return 0;
+    if (t === 'T2') return 1;
+    if (t === 'T3') return 2;
+    if (t === 'parked') return 4;
+    return 3;
+  }
+
+  function statusRank(st) {
+    return { live: 0, review: 1, blocked: 2, queued: 3, parked: 4, dead: 5 }[st];
+  }
+
+  function inPlay(l) {
+    return !!(l.bidding && String(l.bidding).trim());
+  }
+
+  function laneGroup(l) {
+    var st = laneStatus(l);
+    if (st === 'parked' || st === 'dead' || l.tier === 'parked') return 'parked';
+    if (st === 'live' || inPlay(l)) return 'hunting';
+    return 'gate';
+  }
+
+  function sortLanes(a, b) {
+    var d = (inPlay(b) ? 1 : 0) - (inPlay(a) ? 1 : 0);
+    if (d) return d;
+    d = ((b.in_motion || 0) + (b.earned || 0)) - ((a.in_motion || 0) + (a.earned || 0));
+    if (d) return d;
+    d = tierRank(a) - tierRank(b);
+    if (d) return d;
+    d = statusRank(laneStatus(a)) - statusRank(laneStatus(b));
+    if (d) return d;
+    return (a.seat || 99) - (b.seat || 99);
+  }
+
+  function groupLanes(lanes) {
+    var g = { hunting: [], gate: [], parked: [] };
+    (lanes || []).forEach(function (l) { g[laneGroup(l)].push(l); });
+    Object.keys(g).forEach(function (k) { g[k].sort(sortLanes); });
+    return g;
+  }
+
+  function tierTag(l) {
+    var t = l.tier;
+    if (t !== 'T1' && t !== 'T2' && t !== 'T3') return '';
+    return '<span class="ltag">' + t + '</span>';
   }
 
   function dRow(key, val) {
@@ -132,29 +194,24 @@ window.FactorySection = (function () {
       '<div class="track"><div class="track-fill" style="width:' + Math.min((earned / wp.amount) * 100, 100) + '%"></div><div class="track-pace" style="left:' + pacePct + '%"></div></div>' +
       '<div class="track-labels"><span>today</span><span>' + esc((d.waypoint || '').replace(/^.*?by\s+/, '').replace(/\s*\(.*$/, '')) + '</span></div></div>';
 
+    var g0 = groupLanes(d.lanes);
     html += '<div class="vitals-strip">' +
-      vital((d.lanes || []).length, 'seats') + vital(counts.live, 'live') + vital(counts.review, 'in review') +
-      vital(counts.queued, 'queued') + vital(counts.parked, 'parked') +
+      vital((d.lanes || []).length, 'seats') + vital(g0.hunting.length, 'live and hunting') +
+      vital(g0.gate.length, 'one gate away') + vital(g0.parked.length - counts.dead, 'parked') +
       '<div class="vital v-dead"><span class="v-num">' + counts.dead + '</span><span class="v-label">killed</span></div></div>';
 
     html += '<div class="section-head"><h2 class="sec-title">Money over time</h2><span class="head-note">earned vs pace required</span></div>' +
       '<div class="chart-wrap">' + renderChart(d.daily || [], wp.amount, wp.date) + '</div>';
 
-    /* lanes by tier */
-    var tierNames = { T1: 'Tier 1 \u00b7 the front line', T2: 'Tier 2', T3: 'Tier 3', other: 'No tier on record', parked: 'Parked' };
-    var groups = { T1: [], T2: [], T3: [], other: [], parked: [] };
-    (d.lanes || []).forEach(function (l) {
-      var t = l.tier;
-      if (t === 'parked' || (l.tier_class === 'parked' && laneStatus(l) !== 'dead')) groups.parked.push(l);
-      else if (['T1', 'T2', 'T3'].indexOf(t) >= 0) groups[t].push(l);
-      else groups.other.push(l);
-    });
+    /* the floor, grouped his way: closeness to money */
+    var groups = groupLanes(d.lanes);
 
-    html += '<div class="section-head"><h2 class="sec-title">The floor</h2><span class="head-note">' + (d.lanes || []).length + ' seats \u00b7 click a row for the full card</span></div>';
-    ['T1', 'T2', 'T3', 'other', 'parked'].forEach(function (g) {
-      if (!groups[g].length) return;
-      html += '<div class="worker-group-label">' + tierNames[g] + ' \u00b7 ' + groups[g].length + '</div>';
-      groups[g].forEach(function (l) {
+    html += '<div class="section-head"><h2 class="sec-title">The floor</h2><span class="head-note">' + (d.lanes || []).length + ' seats \u00b7 tier one is closest to money \u00b7 click a row for the full card</span></div>';
+    GROUP_DEFS.forEach(function (g) {
+      var lanes = groups[g.key];
+      if (!lanes.length) return;
+      html += '<div class="worker-group-label">' + g.label + ' \u00b7 ' + lanes.length + '<span class="group-note">' + g.note + '</span></div>';
+      lanes.forEach(function (l) {
         var st = laneStatus(l);
         var detail = '';
         if (l.bidding) detail += dRow('in play', l.bidding);
@@ -166,10 +223,10 @@ window.FactorySection = (function () {
           (l.reputation.pending || []).forEach(function (p) { rep.push('\u00b7 ' + p); });
           detail += dRow('reputation', rep.join('  \u00b7  '));
         }
-        html += '<div class="f-lane' + (st === 'dead' ? ' is-dead' : '') + '">' +
+        html += '<div class="f-lane' + (st === 'dead' ? ' is-dead' : '') + (st === 'parked' ? ' is-parked' : '') + '">' +
           '<span class="seat">' + (l.seat != null ? String(l.seat).padStart(2, '0') : '\u2013') + '</span>' +
-          '<span class="dot ' + st + '"></span>' +
-          '<span class="lname">' + esc(l.name) + '</span>' +
+          '<span class="dot ' + (st === 'blocked' ? 'review' : st) + '"></span>' +
+          '<span class="lname">' + esc(l.name) + tierTag(l) + '</span>' +
           '<span class="lstate">' + esc(l.state || '') + '</span>' +
           '<span class="lgate">' + esc(l.next_gate || l.next || '') + '</span>' +
           '<span class="lmoney">' + money(l.earned || 0).replace('.00', '') + '</span>' +
@@ -219,5 +276,5 @@ window.FactorySection = (function () {
     return '<div class="vital"><span class="v-num">' + n + '</span><span class="v-label">' + label + '</span></div>';
   }
 
-  return { render: render, laneStatus: laneStatus };
+  return { render: render, laneStatus: laneStatus, groupLanes: groupLanes, tierTag: tierTag, GROUP_DEFS: GROUP_DEFS };
 })();
