@@ -22,7 +22,40 @@
     });
   }
 
-  function getDoc(key) { return getText('/api/doc?key=' + encodeURIComponent(key)); }
+  /* Drive-direct fallback: when the serverless proxy is absent (static host),
+     read the same allowlisted public files straight from Drive (CORS-open). */
+  var DOCS = {
+    factory: '1kGc7N5RD1TuplVGnaTyhjNy1CdSPFbSl',
+    now: '1pgwYFVdjPafhd4s5KJ-aDLsWOEXTnE2k',
+    why: '1SLybFRaEsVWPwhb-kYEND5QyHq67160K',
+    'how-he-thinks': '1MacWd73-8Dsm_KCG6lcuWaj2bTvJheEd',
+    canon: '1ffoK1QKXxregI9mWYCOHddbRigSObsHW',
+    sources: '1_ALvSEB4mGkd0ZSqkrqKjDdIYIJ0GkE3',
+    principles: '1iyShVGZfV6iLDAvvQJNIP7jDXbCkAoTu',
+    nature: '1LlLOAbDdOQC_562umgJoJoX-5IO0vBwP',
+    capabilities: '1UvgHi_Wqe-4SIdIhGtxoa2lYvjQk7__u',
+    agent: '10m6_Obaix9n_lMpH5mlD446qMn57zqqm'
+  };
+  function driveDirect(id) {
+    return 'https://drive.usercontent.google.com/download?id=' + id + '&export=download';
+  }
+  function getDoc(key) {
+    return getText('/api/doc?key=' + encodeURIComponent(key)).catch(function () {
+      var id = DOCS[key];
+      if (!id) throw new Error('unknown doc ' + key);
+      return getText(driveDirect(id));
+    });
+  }
+  function getDaysIndex() {
+    return getJSON('/api/days').catch(function () {
+      return getJSON('data/days-index.json').then(function (idx) { idx._snapshot = true; return idx; });
+    });
+  }
+  function getDay(id) {
+    return getText('/api/day?id=' + encodeURIComponent(id)).catch(function () {
+      return getText(driveDirect(id));
+    });
+  }
 
   function getFactory() {
     return getJSON('/api/doc?key=factory').catch(function () {
@@ -30,7 +63,7 @@
     });
   }
 
-  var ctx = { getJSON: getJSON, getText: getText, getDoc: getDoc, getFactory: getFactory, setSource: setSource };
+  var ctx = { getJSON: getJSON, getText: getText, getDoc: getDoc, getFactory: getFactory, getDaysIndex: getDaysIndex, getDay: getDay, setSource: setSource };
 
   /* clock */
   function tickClock() {
