@@ -13,6 +13,7 @@ const DOCS = {
   nature:         { id: '1LlLOAbDdOQC_562umgJoJoX-5IO0vBwP', type: 'md' },
   capabilities:   { id: '1UvgHi_Wqe-4SIdIhGtxoa2lYvjQk7__u', type: 'md' },
   agent:          { id: '10m6_Obaix9n_lMpH5mlD446qMn57zqqm', type: 'md' },
+  beliefs:        { id: '1_TGR65HjE30Z6fsb0ip9_vbx-9Ej0bcd', type: 'json' },
 };
 
 export async function onRequestGet({ request }) {
