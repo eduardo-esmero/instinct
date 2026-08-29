@@ -208,6 +208,12 @@ window.Sections = (function () {
       var rows = [];
       var done = 0;
       days.forEach(function (day, i) {
+        if (idx._snapshot) {
+          rows[i] = '<a class="day-row" href="#/days/' + esc(day.date) + '"><span class="day-date">' + esc(day.date) + '</span><span><span class="day-title">on the shelf - the page itself needs the server</span></span></a>';
+          done++;
+          if (done === days.length) list.innerHTML = rows.join('');
+          return;
+        }
         ctx.getDay(day.id).then(function (md) {
           var title = (md.match(/^#\s+(.*)$/m) || [null, day.date])[1];
           var excerpt = firstParagraph(md);
