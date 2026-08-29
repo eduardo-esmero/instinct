@@ -107,10 +107,10 @@ window.Sections = (function () {
     }).catch(function () {});
 
     /* today's page, first lines */
-    ctx.getJSON('/api/days').then(function (idx) {
+    ctx.getDaysIndex().then(function (idx) {
       var latest = (idx.days || [])[0];
       if (!latest) return;
-      return ctx.getText('/api/day?id=' + latest.id).then(function (md) {
+      return ctx.getDay(latest.id).then(function (md) {
         var side = document.getElementById('now-side');
         var hero = firstParagraph(md);
         if (hero) {
@@ -193,7 +193,7 @@ window.Sections = (function () {
   /* ---------- Days ---------- */
 
   function renderDays(el, ctx) {
-    ctx.getJSON('/api/days').then(function (idx) {
+    ctx.getDaysIndex().then(function (idx) {
       var days = idx.days || [];
       if (!days.length) {
         el.innerHTML = '<div class="loading">no day pages yet</div>';
@@ -208,7 +208,7 @@ window.Sections = (function () {
       var rows = [];
       var done = 0;
       days.forEach(function (day, i) {
-        ctx.getText('/api/day?id=' + day.id).then(function (md) {
+        ctx.getDay(day.id).then(function (md) {
           var title = (md.match(/^#\s+(.*)$/m) || [null, day.date])[1];
           var excerpt = firstParagraph(md);
           if (excerpt.length > 260) excerpt = excerpt.slice(0, 260).replace(/\s+\S*$/, '') + '...';
@@ -223,20 +223,20 @@ window.Sections = (function () {
           if (done === days.length) list.innerHTML = rows.join('');
         });
       });
-      ctx.setSource('Rendered live from the days/ folder. One page per day, rewritten whole as the day grows.');
+      ctx.setSource(idx._snapshot ? 'Read from a snapshot of the days index (static host; the live folder enumeration needs the server).' : 'Rendered live from the days/ folder. One page per day, rewritten whole as the day grows.');
     }).catch(function () {
       el.innerHTML = '<div class="loading">the days index is unreachable right now</div>';
     });
   }
 
   function renderDay(el, ctx, date) {
-    ctx.getJSON('/api/days').then(function (idx) {
+    ctx.getDaysIndex().then(function (idx) {
       var day = (idx.days || []).filter(function (d) { return d.date === date; })[0];
       if (!day) { el.innerHTML = '<div class="loading">no page for ' + esc(date) + '</div>'; return; }
-      return ctx.getText('/api/day?id=' + day.id).then(function (md) {
+      return ctx.getDay(day.id).then(function (md) {
         el.innerHTML = '<div class="doc-switch"><a href="#/days">&larr; all days</a></div>' +
           '<div class="prose">' + window.MD.render(md) + '</div>';
-        ctx.setSource('Rendered live from days/' + date + '.md. A closed page changes only to correct a falsehood, dated.');
+        ctx.setSource((idx._snapshot ? 'Read from the days index snapshot (static host; live enumeration needs the server). ' : 'Rendered live from days/' + date + '.md. ') + 'A closed page changes only to correct a falsehood, dated.');
       });
     }).catch(function () {
       el.innerHTML = '<div class="loading">the day page is unreachable right now</div>';
