@@ -457,6 +457,30 @@ h2.sec-title {
   margin: 28px 0 4px;
 }
 
+.worker-group-label .group-note {
+  display: block;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--faint);
+  opacity: 0.75;
+  margin-top: 3px;
+}
+
+.ltag {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+  border: 1px solid var(--faint);
+  border-radius: 2px;
+  padding: 1px 4px;
+  margin-left: 8px;
+  vertical-align: 1px;
+}
+
+.f-lane.is-parked .lname, .f-lane.is-parked .lstate, .f-lane.is-parked .lgate { color: var(--faint); }
+.worker.is-parked .wname, .worker.is-parked .wstate { color: var(--faint); }
+
 .dot {
   width: 7px; height: 7px;
   border-radius: 50%;
