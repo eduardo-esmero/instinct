@@ -28,7 +28,7 @@ export async function onRequestGet({ request }) {
     const text = await r.text();
     const type = doc.type === 'json' ? 'application/json; charset=utf-8' : 'text/plain; charset=utf-8';
     if (doc.type === 'json') JSON.parse(text);
-    return new Response(text, { headers: { 'Content-Type': type, 'Cache-Control': 'public, max-age=30' } });
+    return new Response(text, { headers: { 'Content-Type': type, 'Cache-Control': 'public, max-age=30', 'Access-Control-Allow-Origin': '*' } });
   } catch (e) {
     return Response.json({ error: 'source unavailable', detail: String(e && e.message || e) }, { status: 502 });
   }
